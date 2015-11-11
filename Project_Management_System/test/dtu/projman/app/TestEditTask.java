@@ -1,0 +1,318 @@
+package dtu.projman.app;
+
+import static org.junit.Assert.*;
+
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+
+import org.junit.Before;
+import org.junit.Test;
+
+
+/*
+ * @author Atakan Kaya
+ */
+public class TestEditTask {
+
+	ProjManApp app = new ProjManApp();
+	Employee emp1, emp2, emp3;
+	Project project;
+	Activity activity;
+	Task task;
+	
+	@Before
+	public void setUp() throws Exception {
+		// Create two employees
+		String fullname1 = "Atakan Kaya", 
+				fullname2 = "Filipe Silva",
+				fullname3 = "Marc Thomsen";
+		String username1 = "kaat",
+				username2 = "filp", 
+				username3 = "marc";
+		String email1 = "kayaatakan@gmail.com",
+				email2 = "filipesilva@gmail.com",
+				email3 = "marcthomsen@gmail.com";
+		
+		emp1 = new Employee(fullname1, username1, email1);
+		emp2 = new Employee(fullname2, username2, email2);
+		emp3 = new Employee(fullname3, username3, email3);
+		
+		// Register employees
+		app.registerEmployee(emp1);
+		app.registerEmployee(emp2);
+		
+		app.employeeLogin("filp");
+		
+		// Create project
+		project = app.createProject("Project 1 - Test", ProjectType.EXTERNAL, "Microsoft");
+		project.setStartDate(new GregorianCalendar(2013, Calendar.APRIL, 1));
+		project.setEndDate(new GregorianCalendar(2013, Calendar.MAY, 3));
+		
+		// Create activity
+		activity = app.createActivity(project, "Implementation");
+		activity.setStartDate(new GregorianCalendar(2013, Calendar.APRIL, 8));
+		activity.setEndDate(new GregorianCalendar(2013, Calendar.APRIL, 26));
+		
+		// Create task
+		task = app.createTask(activity, "Implement edit task");
+		
+		app.employeeLogoff();
+	
+	}
+
+	@Test
+	public void testEditTask() throws OperationNotAllowedException {
+		// Check nobody logged in
+		assertNull(app.getEmployeeLoggedIn());
+		
+		// Login
+		app.employeeLogin("filp");
+		assertEquals(emp2,app.getEmployeeLoggedIn());
+		
+		// Parameters Set 
+		String newName = "Implement create task";
+		String newDescription = "This is a new test task.";
+		Calendar newStartDate = new GregorianCalendar(2013, Calendar.APRIL, 15);
+		Calendar newEndDate = new GregorianCalendar(2013, Calendar.APRIL, 19);
+		double newEstimated_no_hours = 10;
+		double newWorked_no_hours = 3;
+		
+		// Edit Task
+		task.setName(newName);
+		task.setDescription(newDescription);
+		task.setStartDate(newStartDate);
+		task.setEndDate(newEndDate);
+		task.assignDeveloper(emp1);
+		task.setEstimated_no_hours(newEstimated_no_hours);
+		task.setWorked_no_hours(newWorked_no_hours);
+		
+		// Test if data has been saved
+		Task taskInApp = app.getTaskById(task.getId());
+		assertEquals(newName, taskInApp.getName());
+		assertEquals(newDescription, taskInApp.getDescription());
+		assertEquals(newStartDate, taskInApp.getStartDate());
+		assertEquals(newEndDate, taskInApp.getEndDate());
+		assertEquals(emp1, taskInApp.getDeveloper());
+		assertTrue(newEstimated_no_hours == taskInApp.getEstimated_no_hours());
+		assertTrue(newWorked_no_hours == taskInApp.getWorked_no_hours());
+	}
+
+	public void testEditTaskNotLoggedIn() throws OperationNotAllowedException {	
+		// Check nobody logged in
+		assertNull(app.getEmployeeLoggedIn());
+		
+		// Parameters Set 
+		String newName = "Implement create task";
+		String newDescription = "This is a new test task.";
+		Calendar newStartDate = new GregorianCalendar(2013, Calendar.APRIL, 15);
+		Calendar newEndDate = new GregorianCalendar(2013, Calendar.APRIL, 19);
+		double newEstimated_no_hours = 10;
+		double newWorked_no_hours = 3;
+		
+		// Old values
+		String oldName = task.getName();
+		String oldDescription = task.getDescription();
+		Calendar oldStartDate = task.getStartDate();
+		Calendar oldEndDate = task.getEndDate();
+		double oldEstimated_no_hours = task.getEstimated_no_hours();
+		double oldWorked_no_hours = task.getWorked_no_hours();
+		
+		// Edit Task
+		try {
+			task.setName(newName);
+			fail("Exception should have been thrown, no employee logged in");
+		} catch (OperationNotAllowedException e) {
+			assertEquals(Error.NO_EMPLOYEE_LOGGED_IN, e.getError());
+		}
+		try {
+			task.setDescription(newDescription);
+			fail("Exception should have been thrown, no employee logged in");
+		} catch (OperationNotAllowedException e) {
+			assertEquals(Error.NO_EMPLOYEE_LOGGED_IN, e.getError());
+		}
+		try {
+			task.setStartDate(newStartDate);
+			fail("Exception should have been thrown, no employee logged in");
+		} catch (OperationNotAllowedException e) {
+			assertEquals(Error.NO_EMPLOYEE_LOGGED_IN, e.getError());
+		}
+		try {
+			task.setEndDate(newEndDate);
+			fail("Exception should have been thrown, no employee logged in");
+		} catch (OperationNotAllowedException e) {
+			assertEquals(Error.NO_EMPLOYEE_LOGGED_IN, e.getError());
+		}
+		try {
+			task.assignDeveloper(emp1);
+			fail("Exception should have been thrown, no employee logged in");
+		} catch (OperationNotAllowedException e) {
+			assertEquals(Error.NO_EMPLOYEE_LOGGED_IN, e.getError());
+		}	
+		try {
+			task.setEstimated_no_hours(newEstimated_no_hours);
+			fail("Exception should have been thrown, no employee logged in");
+		} catch (OperationNotAllowedException e) {
+			assertEquals(Error.NO_EMPLOYEE_LOGGED_IN, e.getError());
+		}
+		try {
+			task.setWorked_no_hours(newWorked_no_hours);
+			fail("Exception should have been thrown, no employee logged in");
+		} catch (OperationNotAllowedException e) {
+			assertEquals(Error.NO_EMPLOYEE_LOGGED_IN, e.getError());
+		}
+		
+		// Test if data has not been saved
+		Task taskInApp = app.getTaskById(task.getId());
+		assertEquals(oldName, taskInApp.getName());
+		assertEquals(oldDescription, taskInApp.getDescription());
+		assertEquals(oldStartDate, taskInApp.getStartDate());
+		assertEquals(oldEndDate, taskInApp.getEndDate());
+		assertEquals(emp1, taskInApp.getDeveloper());
+		assertTrue(oldEstimated_no_hours == taskInApp.getEstimated_no_hours());
+		assertTrue(oldWorked_no_hours == taskInApp.getWorked_no_hours());
+	}
+
+	@Test
+	public void testEditTaskMandInfoNotProvided() throws OperationNotAllowedException {
+		// Login
+		app.employeeLogin("filp");
+		assertEquals(emp2,app.getEmployeeLoggedIn());
+
+		String oldName = task.getName();
+		try {
+			task.setName("");
+			fail("An exception should have been thrown since all the mandatory info has to be provided.");
+		}
+		catch(OperationNotAllowedException e) {
+			assertEquals(Error.NAME_ERROR, e.getError());
+		}
+		
+		// Check that activity's name is not edited
+		assertEquals(oldName, app.getTaskById(task.getId()).getName());
+	}
+	
+	@Test
+	public void testEditTaskStartDateNotMonday() throws OperationNotAllowedException {
+		// Login
+		app.employeeLogin("filp");
+		assertEquals(emp2,app.getEmployeeLoggedIn());
+
+		Calendar oldStartDate = task.getStartDate();
+		Calendar newStartDate = new GregorianCalendar(2013, Calendar.APRIL, 2); //Tuesday
+		try {		
+			task.setStartDate(newStartDate);
+			fail("An exception should have been thrown since 2 April 2013 is not monday and cannot be a start date for the project.");
+		}
+		catch(OperationNotAllowedException e) {
+			assertEquals(Error.START_DATE_NOT_MONDAY, e.getError());
+		}
+		
+		assertNull(task.getStartDate());
+		
+		// Check that project is not edited
+		assertEquals(oldStartDate, task.getStartDate());
+		assertEquals(oldStartDate, app.getTaskById(task.getId()).getStartDate());
+	}
+	
+	@Test
+	public void testEditTaskEndDateNotFriday() throws OperationNotAllowedException {
+		// Login
+		app.employeeLogin("filp");
+		assertEquals(emp2,app.getEmployeeLoggedIn());
+
+		Calendar oldEndDate = task.getEndDate();
+		Calendar newEndDate = new GregorianCalendar(2013, Calendar.APRIL, 2); //Tuesday
+		try {		
+			task.setStartDate(newEndDate);
+			fail("An exception should have been thrown since 2 April 2013 is not monday and cannot be a start date for the project.");
+		}
+		catch(OperationNotAllowedException e) {
+			assertEquals(Error.START_DATE_NOT_MONDAY, e.getError());
+		}
+		
+		assertNull(task.getEndDate());
+		
+		// Check that project is not edited
+		assertEquals(oldEndDate, task.getEndDate());
+		assertEquals(oldEndDate, app.getTaskById(task.getId()).getEndDate());
+	}
+	
+	@Test
+	public void testEditTaskStartDateLaterThanEndDate() throws OperationNotAllowedException {
+		// Login
+		app.employeeLogin("filp");
+		assertEquals(emp2,app.getEmployeeLoggedIn());
+	
+		Calendar oldEndDate = task.getEndDate();
+		Calendar newStartDate = new GregorianCalendar(2013, Calendar.MAY, 6);	// Monday
+		Calendar newEndDate = new GregorianCalendar(2013, Calendar.APRIL, 5); 	// Friday
+		try {
+			task.setStartDate(newStartDate);
+			task.setEndDate(newEndDate);
+			fail("An exception should have been thrown since start date cannot be later than end date.");
+		}
+		catch(OperationNotAllowedException e) {
+			assertEquals(Error.END_DATE_ERROR, e.getError());
+		}
+		
+		//Test if only StartDate is overwritten
+		assertEquals(newStartDate, task.getStartDate());
+		assertEquals(newStartDate, app.getTaskById(task.getId()).getStartDate());
+		
+		assertEquals(oldEndDate, task.getEndDate());
+		assertEquals(oldEndDate, app.getTaskById(task.getId()).getEndDate());
+	}
+	
+	@Test
+	public void testNoEstimatedHoursIllegalInput() throws OperationNotAllowedException {
+		// Login
+		app.employeeLogin("filp");
+		assertEquals(emp2,app.getEmployeeLoggedIn());
+
+		task.setEstimated_no_hours(10);
+		
+		try {
+			task.setEstimated_no_hours(-1);
+			fail("An exception should have been thrown about 1/2 hour accuracy");
+		} catch (OperationNotAllowedException e) {
+			assertEquals(Error.ESTIMATED_NO_HOURS_ACCURACY_ERROR, e.getError());
+		}
+		try {
+			task.setEstimated_no_hours(4.2);
+			fail("An exception should have been thrown about 1/2 hour accuracy");
+		} catch (OperationNotAllowedException e) {
+			assertEquals(Error.ESTIMATED_NO_HOURS_ACCURACY_ERROR, e.getError());
+		}
+
+		// Test if data has not been saved
+		Task taskInApp = app.getTaskById(task.getId());
+		assertTrue(10 == taskInApp.getEstimated_no_hours());
+	}
+
+	@Test
+	public void testNoWorkedHoursIllegalInput() throws OperationNotAllowedException {
+		// Login
+		app.employeeLogin("filp");
+		assertEquals(emp2,app.getEmployeeLoggedIn());
+
+		task.setWorked_no_hours(3);
+		
+		try {
+			task.setWorked_no_hours(-1);
+			fail("An exception should have been thrown about 1/2 hour accuracy");
+		} catch (OperationNotAllowedException e) {
+			assertEquals(Error.WORKED_NO_HOURS_ACCURACY_ERROR, e.getError());
+		}
+		try {
+			task.setWorked_no_hours(4.2);
+			fail("An exception should have been thrown about 1/2 hour accuracy");
+		} catch (OperationNotAllowedException e) {
+			assertEquals(Error.WORKED_NO_HOURS_ACCURACY_ERROR, e.getError());
+		}
+
+		// Test if data has not been saved
+		Task taskInApp = app.getTaskById(task.getId());
+		assertTrue(3 == taskInApp.getWorked_no_hours());
+	}	
+	
+}

@@ -1,0 +1,82 @@
+package dtu.projman.app;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+
+public class Employee {
+
+	private String fullname;
+	private String username;
+	private String email;
+	
+	private List<Task> tasksToDo = new ArrayList<Task>();
+	private List<Unavailability> UnavailList = new ArrayList<Unavailability>();
+
+	public Employee(String fullname, String username, String email) {
+		setFullname(fullname);
+		setUsername(username);
+		setEmail(email);
+		tasksToDo = null;
+	}
+
+	public String getFullname() {
+		return fullname;
+	}
+
+	public String getUsername() {
+		return username;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public void setFullname(String fullname) {
+		this.fullname = fullname;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+	
+	public void addTask(Task taskToAdd) {
+		tasksToDo.add(taskToAdd);
+	}
+	
+	// @author Filipe Silva
+	public void setUnavailability(Calendar startDate, Calendar endDate, String description) throws OperationNotAllowedException {
+		Unavailability unavailability;
+		if(endDate.after(startDate)){
+			unavailability = new Unavailability(startDate, endDate, description);
+		} else {
+			throw new OperationNotAllowedException("Employee unavailability: The start date is after the end date.");
+		}
+		
+		for(Task task: tasksToDo){
+			if(!(task.getStartDate().after(endDate) || task.getEndDate().before(startDate))){ // CHECK
+				throw new OperationNotAllowedException("Employee unavailability: The unavailability is overlapped with some tasks.");
+			}	
+		}
+		
+		UnavailList.add(unavailability);
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == this) {
+            return true;
+        }
+        if (obj == null || obj.getClass() != this.getClass()) {
+            return false;
+        }
+	
+		Employee employee = (Employee) obj;
+		return this.getUsername().equals(employee.getUsername());
+	}
+
+}

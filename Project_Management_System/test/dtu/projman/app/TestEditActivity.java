@@ -1,0 +1,225 @@
+package dtu.projman.app;
+
+import static org.junit.Assert.*;
+
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+
+import org.junit.Before;
+import org.junit.Test;
+
+/*
+ * @author Atakan Kaya
+ */
+public class TestEditActivity {
+	
+	ProjManApp app = new ProjManApp();
+	Employee emp1, emp2, emp3;
+	Project project;
+	Activity activity;
+	
+	@Before
+	public void setUp() throws Exception {
+		// Create three employees
+		String fullname1 = "Atakan Kaya", 
+				fullname2 = "Filipe Silva",
+				fullname3 = "Marc Thomsen";
+		String username1 = "kaat",
+				username2 = "filp", 
+				username3 = "marc";
+		String email1 = "kayaatakan@gmail.com",
+				email2 = "filipesilva@gmail.com",
+				email3 = "marcthomsen@gmail.com";
+		
+		emp1 = new Employee(fullname1, username1, email1);
+		emp2 = new Employee(fullname2, username2, email2);
+		emp3 = new Employee(fullname3, username3, email3);
+		
+		// Register employees
+		app.registerEmployee(emp1);
+		app.registerEmployee(emp2);
+		
+		app.employeeLogin("filp");
+		
+		// Create project
+		project = app.createProject("Project 1 - Test", ProjectType.EXTERNAL, "Microsoft");
+		project.setStartDate(new GregorianCalendar(2013, Calendar.APRIL, 8));
+		project.setEndDate(new GregorianCalendar(2013, Calendar.APRIL, 26));
+		
+		// Create activity
+		activity = app.createActivity(project, "Design");
+		
+		app.employeeLogoff();
+	}
+
+	@Test
+	public void testEditActivity() throws OperationNotAllowedException {
+		// Check nobody logged in
+		assertNull(app.getEmployeeLoggedIn());
+		
+		// Login
+		app.employeeLogin("filp");
+		assertEquals(emp2,app.getEmployeeLoggedIn());
+		
+		// Parameters Set 
+		String newName = "Design Week 1";
+		String newDescription = "This is a new test activity.";
+		Calendar newStartDate = new GregorianCalendar(2013, Calendar.APRIL, 15);
+		Calendar newEndDate = new GregorianCalendar(2013, Calendar.APRIL, 19);
+		
+		// Edit Activity
+		activity.setName(newName);
+		activity.setDescription(newDescription);
+		activity.setStartDate(newStartDate);
+		activity.setEndDate(newEndDate);
+		
+		// Test if data has been saved
+		Activity activityInApp = app.getActivityById(activity.getId());
+		assertEquals(newName, activityInApp.getName());
+		assertEquals(newDescription, activityInApp.getDescription());
+		assertEquals(newStartDate, activityInApp.getStartDate());
+		assertEquals(newEndDate, activityInApp.getEndDate());
+	}
+
+	@Test
+	public void testEditActivityNotLoggedIn() throws OperationNotAllowedException {	
+		// Check nobody logged in
+		assertNull(app.getEmployeeLoggedIn());
+		
+		// Parameters Set 
+		String newName = "Design Week 1";
+		String newDescription = "This is a new test activity.";
+		Calendar newStartDate = new GregorianCalendar(2013, Calendar.APRIL, 15);
+		Calendar newEndDate = new GregorianCalendar(2013, Calendar.APRIL, 19);
+		
+		// Old values
+		String oldName = activity.getName();
+		String oldDescription = activity.getDescription();
+		Calendar oldStartDate = activity.getStartDate();
+		Calendar oldEndDate = activity.getEndDate();
+		
+		// Edit Activity
+		try {
+			activity.setName(newName);
+			fail("Exception should have been thrown, no employee logged in");
+		} catch (OperationNotAllowedException e) {
+			assertEquals(Error.NO_EMPLOYEE_LOGGED_IN, e.getError());
+		}
+		try {
+			activity.setDescription(newDescription);
+			fail("Exception should have been thrown, no employee logged in");
+		} catch (OperationNotAllowedException e) {
+			assertEquals(Error.NO_EMPLOYEE_LOGGED_IN, e.getError());
+		}
+		try {
+			activity.setStartDate(newStartDate);
+			fail("Exception should have been thrown, no employee logged in");
+		} catch (OperationNotAllowedException e) {
+			assertEquals(Error.NO_EMPLOYEE_LOGGED_IN, e.getError());
+		}
+		try {
+			activity.setEndDate(newEndDate);
+			fail("Exception should have been thrown, no employee logged in");
+		} catch (OperationNotAllowedException e) {
+			assertEquals(Error.NO_EMPLOYEE_LOGGED_IN, e.getError());
+		}
+		
+		// Test if data has not been saved
+		Activity activityInApp = app.getActivityById(activity.getId());
+		assertEquals(oldName, activityInApp.getName());
+		assertEquals(oldDescription, activityInApp.getDescription());
+		assertEquals(oldStartDate, activityInApp.getStartDate());
+		assertEquals(oldEndDate, activityInApp.getEndDate());
+	}
+	
+	@Test
+	public void testEditActivityMandInfoNotProvided() throws OperationNotAllowedException {
+		// Login
+		app.employeeLogin("filp");
+		assertEquals(emp2,app.getEmployeeLoggedIn());
+
+		String oldName = activity.getName();
+		try {
+			activity.setName("");
+			fail("An exception should have been thrown since all the mandatory info has to be provided.");
+		}
+		catch(OperationNotAllowedException e) {
+			assertEquals(Error.NAME_ERROR, e.getError());
+		}
+		
+		// Check that activity's name is not edited
+		assertEquals(oldName, app.getActivityById(activity.getId()).getName());
+	}
+	
+	@Test
+	public void testEditActivityStartDateNotMonday() throws OperationNotAllowedException {
+		// Login
+		app.employeeLogin("filp");
+		assertEquals(emp2,app.getEmployeeLoggedIn());
+
+		Calendar oldStartDate = activity.getStartDate();
+		Calendar newStartDate = new GregorianCalendar(2013, Calendar.APRIL, 2);
+		try {		
+			activity.setStartDate(newStartDate);
+			fail("An exception should have been thrown since 2 April 2013 is not monday and cannot be a start date for the project.");
+		}
+		catch(OperationNotAllowedException e) {
+			assertEquals(Error.START_DATE_NOT_MONDAY, e.getError());
+		}
+		
+		assertNull(activity.getStartDate());
+		
+		// Check that project is not edited
+		assertEquals(oldStartDate, activity.getStartDate());
+		assertEquals(oldStartDate, app.getActivityById(activity.getId()).getStartDate());
+	}
+	
+	@Test
+	public void testEditActivityEndDateNotFriday() throws OperationNotAllowedException {
+		// Login
+		app.employeeLogin("filp");
+		assertEquals(emp2,app.getEmployeeLoggedIn());
+
+		Calendar oldEndDate = activity.getEndDate();
+		Calendar newEndDate = new GregorianCalendar(2013, Calendar.APRIL, 2);
+		try {		
+			activity.setStartDate(newEndDate);
+			fail("An exception should have been thrown since 2 April 2013 is not monday and cannot be a start date for the project.");
+		}
+		catch(OperationNotAllowedException e) {
+			assertEquals(Error.START_DATE_NOT_MONDAY, e.getError());
+		}
+		
+		assertNull(activity.getEndDate());
+		
+		// Check that project is not edited
+		assertEquals(oldEndDate, activity.getEndDate());
+		assertEquals(oldEndDate, app.getActivityById(activity.getId()).getEndDate());
+	}
+	
+	@Test
+	public void testEditActivityStartDateLaterThanEndDate() throws OperationNotAllowedException {
+		// Login
+		app.employeeLogin("filp");
+		assertEquals(emp2,app.getEmployeeLoggedIn());
+	
+		Calendar oldEndDate = activity.getEndDate();
+		Calendar newStartDate = new GregorianCalendar(2013, Calendar.MAY, 6);	// Monday
+		Calendar newEndDate = new GregorianCalendar(2013, Calendar.APRIL, 5); 	// Friday
+		try {
+			activity.setStartDate(newStartDate);
+			activity.setEndDate(newEndDate);
+			fail("An exception should have been thrown since start date cannot be later than end date.");
+		}
+		catch(OperationNotAllowedException e) {
+			assertEquals(Error.END_DATE_ERROR, e.getError());
+		}
+		
+		assertEquals(newStartDate, activity.getStartDate());
+		assertEquals(newStartDate, app.getActivityById(activity.getId()).getStartDate());
+		
+		assertEquals(oldEndDate, activity.getEndDate());
+		assertEquals(oldEndDate, app.getActivityById(activity.getId()).getEndDate());
+	}
+	
+}
